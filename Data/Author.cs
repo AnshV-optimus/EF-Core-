@@ -6,6 +6,7 @@
         public string Name { get; set; }
         public string Email { get; set; }
 
-        public ICollection<Book> Books { get; set; }
+        //[System.Text.Json.Serialization.JsonIgnore]
+        public virtual ICollection<Book> Books { get; set; } = new List<Book>();
     }
 }

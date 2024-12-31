@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace EntityFrameworkCoreApp.Controllers
 {
@@ -91,5 +92,99 @@ namespace EntityFrameworkCoreApp.Controllers
 
             return Ok(value);
         }
+
+        [HttpDelete("{BookId}")]
+        public async Task<IActionResult> DeleteBookById([FromRoute] int BookId)
+        {
+            var result = _appDbContext.Books.Find(BookId);
+
+            if (result == null)
+                return NotFound();
+
+            _appDbContext.Books.Remove(result);
+
+            await _appDbContext.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        [HttpDelete("DeleteBulk")]
+
+        public async Task<IActionResult> DeleteBooksInBulk()
+        {
+            //var result = _appDbContext.Books.Where(x=>x.Id <= 2).ToList();
+
+            //_appDbContext.Books.RemoveRange(result);
+
+            //await _appDbContext.SaveChangesAsync();
+
+            //METHOD 2
+
+            var result = await _appDbContext.Books
+                            .Where(x => x.Id <= 3)
+                            .ExecuteDeleteAsync();
+
+
+            return Ok();
+        }
+
+        [HttpGet("GetBooks")]
+        public async Task<IActionResult> GetBooksJoins()
+        {
+            var result = await _appDbContext.Books
+                            .Select(x => new
+                            {
+                                x.Id,
+                                x.Title,
+                                LangTitle = x.Language.Title,
+                                x.Author.Email
+                            }).ToListAsync();
+
+            return Ok(result);
+        }
+
+        [HttpGet("Eager")]
+
+        public async Task<IActionResult> GetBooksByEargerLoading()
+        {
+            var result = await _appDbContext.Author
+                        .Include(b => b.Books).ToListAsync();
+
+            return Ok(result);
+        }
+
+        [HttpGet("BulkLazy")]
+        public async Task<IActionResult> GetBooksByLazyLoading()
+        {
+            try
+            {
+                var result = await _appDbContext.Books.ToListAsync();
+
+                var BooksWithAutor = new List<object>();
+
+                foreach(var book in result)
+                {
+                    var author = book.Author;
+
+                    BooksWithAutor.Add(new
+                    {
+                        BoolTitle = book.Title,
+                        AuthorName = author?.Name
+
+                    });
+
+                }
+
+                return Ok(BooksWithAutor);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
+        }
     }
+
+
+
 }
